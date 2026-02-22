@@ -9,10 +9,7 @@ I noticed there wasn’t a simple, easy-to-install Minecraft window resizer for 
 On Windows, **Jingle** is widely used in the speedrunning community and provides great functionality.  
 However, it is not supported on Linux.
 
-While this script does not aim to replicate all of Jingle’s features, in practice most players primarily use it for:
-
-- Thin window resizing
-- Boat eye setups
+While this script does not aim to replicate all of Jingle’s features, in practice most players primarily use it for thin window resizing and boat eye setups.
 
 This project focuses on providing that core functionality in a lightweight and simple way for Linux users.
 

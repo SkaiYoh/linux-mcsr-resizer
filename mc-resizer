@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+SCREEN=$(xdpyinfo | grep dimensions | awk '{print $2}')
+SCREEN_WIDTH=$(echo $SCREEN | cut -d'x' -f1)
+SCREEN_HEIGHT=$(echo $SCREEN | cut -d'x' -f2)
+
+THIN_W=1920
+THIN_H=200
+
+WIDE_W=450
+WIDE_H=1080
+
+WIN_ID=$(wmctrl -l | grep -E "Minecraft\*|MCSR" | awk '{print $1}' | head -n 1)
+
+[ -z "$WIN_ID" ] && exit 0
+
+IS_FULLSCREEN=$(xprop -id $WIN_ID | grep _NET_WM_STATE_FULLSCREEN)
+
+GEOM=$(xdotool getwindowgeometry $WIN_ID 2>/dev/null | grep Geometry)
+CURRENT_W=$(echo $GEOM | cut -d' ' -f2 | cut -d'x' -f1)
+CURRENT_H=$(echo $GEOM | cut -d'x' -f2)
+
+center_window() {
+    WIDTH=$1
+    HEIGHT=$2
+
+    X=$(( (SCREEN_WIDTH - WIDTH) / 2 ))
+    Y=$(( (SCREEN_HEIGHT - HEIGHT) / 2 ))
+
+    wmctrl -i -r $WIN_ID -b remove,fullscreen
+    sleep 0.15
+    wmctrl -i -R $WIN_ID
+    sleep 0.1
+    wmctrl -i -r $WIN_ID -e 0,$X,$Y,$WIDTH,$HEIGHT
+}
+if [ -n "$IS_FULLSCREEN" ]; then
+    # Fullscreen -> Thin
+    center_window $THIN_W $THIN_H
+
+elif [ "$CURRENT_W" = "$THIN_W" ] && [ "$CURRENT_H" = "$THIN_H" ]; then
+    # Thin -> Wide
+    center_window $WIDE_W $WIDE_H
+
+elif [ "$CURRENT_W" = "$WIDE_W" ] && [ "$CURRENT_H" = "$WIDE_H" ]; then
+    # Wide -> Fullscreen
+    wmctrl -i -r $WIN_ID -b add,fullscreen
+
+else
+    #random
+    wmctrl -i -r $WIN_ID -b add,fullscreen
+fi

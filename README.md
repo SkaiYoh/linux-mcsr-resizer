@@ -47,7 +47,8 @@ Although this is a minimal script, combining it with OBS allows Linux players to
 
 ```bash
 chmod +x mc-resizer
-mv mc-resizer ~/.local/bin/```
+mv mc-resizer ~/.local/bin/
+```
 
 ## Usage
 
@@ -55,7 +56,8 @@ Bind mc-resizer to a keyboard shortcut in your desktop environment.
 
 Example (GNOME):
 
-```Open Settings
+```
+Open Settings
 
 Go to Keyboard → Keyboard Shortcuts
 
@@ -63,7 +65,8 @@ Add a new custom shortcut
 
 Command: mc-resizer
 
-Assign your preferred key ```
+Assign your preferred key
+```
 
 Each time you press the key, the window will cycle:
 

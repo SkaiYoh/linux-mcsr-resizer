@@ -9,10 +9,8 @@ TOLERANCE=10
 SCRIPT_DIR="$HOME/.local/share/mc-resizer"
 SCRIPT_FILE="$SCRIPT_DIR/resize.js"
 
-# Generate JS file on first run
-if [ ! -f "$SCRIPT_FILE" ]; then
-    mkdir -p "$SCRIPT_DIR"
-    cat > "$SCRIPT_FILE" << EOF
+mkdir -p "$SCRIPT_DIR"
+cat > "$SCRIPT_FILE" << EOF
 (function() {
     var THIN_W = $THIN_W;
     var THIN_H = $THIN_H;
@@ -64,7 +62,6 @@ if [ ! -f "$SCRIPT_FILE" ]; then
     }
 })();
 EOF
-fi
 
 qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript mc-resizer 2>/dev/null
 qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$SCRIPT_FILE" mc-resizer >/dev/null

@@ -1,51 +1,72 @@
 #!/usr/bin/env bash
 
-SCREEN=$(xdpyinfo | grep dimensions | awk '{print $2}')
-SCREEN_WIDTH=$(echo $SCREEN | cut -d'x' -f1)
-SCREEN_HEIGHT=$(echo $SCREEN | cut -d'x' -f2)
-
 THIN_W=1920
 THIN_H=200
-
 WIDE_W=450
 WIDE_H=1080
+TOLERANCE=10
 
-WIN_ID=$(wmctrl -l | grep -E "Minecraft\*|MCSR" | awk '{print $1}' | head -n 1)
+SCRIPT_DIR="$HOME/.local/share/mc-resizer"
+SCRIPT_FILE="$SCRIPT_DIR/resize.js"
 
-[ -z "$WIN_ID" ] && exit 0
+# Generate JS file on first run
+if [ ! -f "$SCRIPT_FILE" ]; then
+    mkdir -p "$SCRIPT_DIR"
+    cat > "$SCRIPT_FILE" << EOF
+(function() {
+    var THIN_W = $THIN_W;
+    var THIN_H = $THIN_H;
+    var WIDE_W = $WIDE_W;
+    var WIDE_H = $WIDE_H;
+    var TOL = $TOLERANCE;
 
-IS_FULLSCREEN=$(xprop -id $WIN_ID | grep _NET_WM_STATE_FULLSCREEN)
+    var clients = workspace.windowList();
+    var mc = null;
+    for (var i = 0; i < clients.length; i++) {
+        var cap = clients[i].caption || "";
+        if (cap.match(/Minecraft\\*|MCSR/)) {
+            mc = clients[i];
+            break;
+        }
+    }
+    if (!mc) return;
 
-GEOM=$(xdotool getwindowgeometry $WIN_ID 2>/dev/null | grep Geometry)
-CURRENT_W=$(echo $GEOM | cut -d' ' -f2 | cut -d'x' -f1)
-CURRENT_H=$(echo $GEOM | cut -d'x' -f2)
+    var screen = workspace.virtualScreenSize;
+    var screenW = screen.width;
+    var screenH = screen.height;
 
-center_window() {
-    WIDTH=$1
-    HEIGHT=$2
+    var isFS = mc.fullScreen;
+    var curW = mc.frameGeometry.width;
+    var curH = mc.frameGeometry.height;
 
-    X=$(( (SCREEN_WIDTH - WIDTH) / 2 ))
-    Y=$(( (SCREEN_HEIGHT - HEIGHT) / 2 ))
+    function near(a, b) {
+        return Math.abs(a - b) <= TOL;
+    }
 
-    wmctrl -i -r $WIN_ID -b remove,fullscreen
-    sleep 0.15
-    wmctrl -i -R $WIN_ID
-    sleep 0.1
-    wmctrl -i -r $WIN_ID -e 0,$X,$Y,$WIDTH,$HEIGHT
-}
-if [ -n "$IS_FULLSCREEN" ]; then
-    # Fullscreen -> Thin
-    center_window $THIN_W $THIN_H
+    function centerWindow(w, h) {
+        mc.fullScreen = false;
+        mc.frameGeometry = {
+            x: Math.round((screenW - w) / 2),
+            y: Math.round((screenH - h) / 2),
+            width: w,
+            height: h
+        };
+    }
 
-elif [ "$CURRENT_W" = "$THIN_W" ] && [ "$CURRENT_H" = "$THIN_H" ]; then
-    # Thin -> Wide
-    center_window $WIDE_W $WIDE_H
-
-elif [ "$CURRENT_W" = "$WIDE_W" ] && [ "$CURRENT_H" = "$WIDE_H" ]; then
-    # Wide -> Fullscreen
-    wmctrl -i -r $WIN_ID -b add,fullscreen
-
-else
-    #random
-    wmctrl -i -r $WIN_ID -b add,fullscreen
+    if (isFS) {
+        centerWindow(THIN_W, THIN_H);
+    } else if (near(curW, THIN_W) && near(curH, THIN_H)) {
+        centerWindow(WIDE_W, WIDE_H);
+    } else if (near(curW, WIDE_W) && near(curH, WIDE_H)) {
+        mc.fullScreen = true;
+    } else {
+        mc.fullScreen = true;
+    }
+})();
+EOF
 fi
+
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript mc-resizer 2>/dev/null
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$SCRIPT_FILE" mc-resizer >/dev/null
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start
+qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript mc-resizer 2>/dev/null
